@@ -62,11 +62,38 @@ service cloud.firestore {
     // --- COLLECTION RULES ---
 
     match /users/{userId} {
-      allow get: if isOwner(userId);
+      allow read: if isOwner(userId);
       allow create: if isOwner(userId) && isValidUser(incoming());
       allow update: if isOwner(userId)
         && isValidUser(incoming())
-        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'lastLogin']);
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'lastLogin', 'referredBy', 'credits']);
+
+      match /platform_credentials/{credId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      match /referrals/{refId} {
+        allow read: if isOwner(userId);
+      }
+
+      match /credit_transactions/{txId} {
+        allow read, create: if isOwner(userId);
+      }
+
+      match /affiliate_stats/{statId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isSignedIn(); // Allow recording stats
+      }
+    }
+
+    match /commissions/{commId} {
+      allow read: if isSignedIn() && resource.data.referrerId == request.auth.uid;
+      allow create: if isSignedIn();
+    }
+
+    match /payouts/{payoutId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn();
     }
 
     match /projects/{projectId} {

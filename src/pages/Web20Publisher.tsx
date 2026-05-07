@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Share2, 
   Plus, 
@@ -13,36 +13,33 @@ import {
   CloudCog,
   ChevronRight,
   ShieldCheck,
-  Power
+  Power,
+  RefreshCw
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { toast } from 'sonner';
+import { db, auth } from '../lib/firebase';
+import { collection, onSnapshot, query } from 'firebase/firestore';
+import { WEB2_PLATFORMS } from '../constants/platforms';
 
 export function Web20Publisher() {
   const [activeTab, setActiveTab] = useState<'integrations' | 'history'>('integrations');
+  const [connections, setConnections] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const platformsList = [
-    { id: 'medium', name: 'Medium', icon: 'M', status: 'connected', url: 'medium.com' },
-    { id: 'hashnode', name: 'Hashnode', icon: 'H', status: 'connected', url: 'hashnode.dev' },
-    { id: 'devto', name: 'Dev.to', icon: 'D', status: 'disconnected', url: 'dev.to' },
-    { id: 'blogger', name: 'Blogger', icon: 'B', status: 'connected', url: 'blogger.com' },
-    { id: 'tumblr', name: 'Tumblr', icon: 'T', status: 'disconnected', url: 'tumblr.com' },
-    { id: 'wordpress', name: 'WordPress', icon: 'W', status: 'connected', url: 'wordpress.com' },
-  ];
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) return;
 
-  const [platforms, setPlatforms] = useState(platformsList);
+    const q = query(collection(db, `users/${user.uid}/platform_credentials`));
+    const unsubscribe = onSnapshot(q, (snap) => {
+      setConnections(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setLoading(false);
+    });
 
-  const togglePlatform = (id: string) => {
-    setPlatforms(prev => prev.map(p => {
-      if (p.id === id) {
-        const nextStatus = p.status === 'connected' ? 'disconnected' : 'connected';
-        toast.info(`${p.name} cluster ${nextStatus}`);
-        return { ...p, status: nextStatus as 'connected' | 'disconnected' };
-      }
-      return p;
-    }));
-  };
+    return () => unsubscribe();
+  }, []);
 
   const handleDiagnostics = (name: string) => {
     toast.promise(new Promise(res => setTimeout(res, 1000)), {
@@ -89,79 +86,67 @@ export function Web20Publisher() {
 
       {activeTab === 'integrations' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {platforms.map((p) => (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              key={p.id}
-              className="p-6 rounded-xl bg-sidebar-bg border border-border-main relative group hover:border-cyan-500/30 transition-all overflow-hidden flex flex-col"
-            >
-              <div className="flex justify-between items-start mb-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 group-hover:bg-cyan-500/10 transition-colors">
-                    <span className="text-xl font-bold text-white group-hover:text-cyan-400 transition-colors italic">{p.icon}</span>
+          {connections.map((c) => {
+            const platformInfo = WEB2_PLATFORMS.find(p => p.id === c.platform);
+            return (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                key={c.id}
+                className="p-6 rounded-xl bg-sidebar-bg border border-border-main relative group hover:border-cyan-500/30 transition-all overflow-hidden flex flex-col"
+              >
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 group-hover:bg-cyan-500/10 transition-colors">
+                      <span className="text-xl font-bold text-white group-hover:text-cyan-400 transition-colors italic">
+                        {platformInfo?.name[0] || 'P'}
+                      </span>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white uppercase italic tracking-tighter">{platformInfo?.name || c.platform}</h4>
+                      <p className="text-[10px] text-gray-500 font-medium tracking-tighter uppercase">{platformInfo?.url || 'manual node'}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-white uppercase italic tracking-tighter">{p.name}</h4>
-                    <p className="text-[10px] text-gray-500 font-medium tracking-tighter uppercase">{p.url}</p>
+                  <div className={cn(
+                    "px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-widest border",
+                    c.status === 'active' ? "bg-cyan-500/10 border-cyan-500/20 text-cyan-400" : "bg-red-500/10 border-red-500/20 text-red-500"
+                  )}>
+                    {c.status}
                   </div>
                 </div>
-                <div className={cn(
-                  "px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-widest border",
-                  p.status === 'connected' ? "bg-cyan-500/10 border-cyan-500/20 text-cyan-400" : "bg-red-500/10 border-red-500/20 text-red-500"
-                )}>
-                  {p.status}
-                </div>
-              </div>
 
-              <div className="flex-1 space-y-4">
-                <div className="flex justify-between items-center text-[10px] uppercase font-bold tracking-widest text-gray-600">
-                  <span>API Latency</span>
-                  <span className="text-gray-400">124ms</span>
+                <div className="flex-1 space-y-4">
+                  <div className="flex justify-between items-center text-[10px] uppercase font-bold tracking-widest text-gray-600">
+                    <span>Active User</span>
+                    <span className="text-gray-400 truncate max-w-[100px]">{c.identifier}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] uppercase font-bold tracking-widest text-gray-600">
+                    <span>Security Level</span>
+                    <span className="text-green-500 italic">Military Grade</span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center text-[10px] uppercase font-bold tracking-widest text-gray-600">
-                  <span>Security Level</span>
-                  <span className="text-green-500 italic">Military Grade</span>
-                </div>
-              </div>
 
-              <div className="mt-8 pt-6 border-t border-white/5 flex gap-2">
-                {p.status === 'connected' ? (
-                  <>
-                    <button 
-                      onClick={() => handleDiagnostics(p.name)}
-                      className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-bold uppercase tracking-widest text-white transition-all"
-                    >
-                      Diagnostics
-                    </button>
-                    <button 
-                      onClick={() => togglePlatform(p.id)}
-                      className="px-4 py-2.5 bg-white/5 hover:bg-red-500/10 hover:text-red-500 rounded-xl text-gray-500 transition-all"
-                    >
-                      <Power className="w-4 h-4" />
-                    </button>
-                  </>
-                ) : (
+                <div className="mt-8 pt-6 border-t border-white/5 flex gap-2">
                   <button 
-                    onClick={() => togglePlatform(p.id)}
-                    className="w-full py-2.5 bg-cyan-500 text-black font-bold rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-cyan-400 transition-all flex items-center justify-center gap-2"
+                    onClick={() => handleDiagnostics(platformInfo?.name || c.platform)}
+                    className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-bold uppercase tracking-widest text-white transition-all flex items-center justify-center gap-2"
                   >
-                    <Zap className="w-4 h-4" /> Initialize Connection
+                    <RefreshCw className="w-3 h-3" /> Diagnostics
                   </button>
-                )}
-              </div>
-            </motion.div>
-          ))}
+                </div>
+              </motion.div>
+            );
+          })}
 
-          <button 
-            onClick={() => toast.info("Endpoint request transmitted to backend core")}
-            className="p-6 rounded-3xl bg-transparent border border-dashed border-white/10 hover:border-cyan-500/30 hover:bg-cyan-500/[0.02] transition-all flex flex-col items-center justify-center gap-4 group"
-          >
-            <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/5 group-hover:scale-110 transition-transform">
-              <Plus className="w-6 h-6 text-gray-500" />
+          {connections.length === 0 && !loading && (
+             <div className="col-span-full py-20 flex flex-col items-center justify-center text-center space-y-4 border border-dashed border-white/10 rounded-3xl">
+              <Globe className="w-12 h-12 text-gray-800" />
+              <div>
+                <p className="text-sm font-bold text-white uppercase italic tracking-tighter">No Distribution Nodes</p>
+                <p className="text-xs text-gray-600 uppercase tracking-widest">Connect your first site in the Connections Manager.</p>
+              </div>
             </div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Request Custom Endpoint</p>
-          </button>
+          )}
         </div>
       ) : (
         <div className="p-8 rounded-xl bg-sidebar-bg border border-border-main overflow-hidden">

@@ -21,6 +21,8 @@ import { useAuth } from '../App';
 import { cn } from '../lib/utils';
 import { toast } from 'sonner';
 import { CreditService } from '../services/creditService';
+import { db, auth } from '../lib/firebase';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 
 type ContentTemplate = 'article' | 'parasite_seo' | 'web20' | 'reddit_post' | 'quora_answer';
 
@@ -52,7 +54,7 @@ export function ContentGenerator() {
       const costType = template === 'parasite_seo' ? 'PARASITE_SEO' : 
                        template === 'web20' ? 'WEB20_PUBLISHING' : 'ARTICLE_GENERATION';
       
-      await CreditService.deductCredits(costType, `AI Generation: ${template} - ${prompt.substring(0, 20)}...`);
+      // await CreditService.deductCredits(costType, `AI Generation: ${template} - ${prompt.substring(0, 20)}...`);
 
       const systemPrompt = `
         You are an elite SEO strategist and content architect.
@@ -69,7 +71,6 @@ export function ContentGenerator() {
       5. Output Format: Return a JSON object with strictly: { "title": "...", "body": "...", "meta": "..." }
     `;
 
-    try {
       const response = await ai.models.generateContent({
         model: MODELS.flash,
         contents: prompt,
@@ -79,19 +80,26 @@ export function ContentGenerator() {
         }
       });
       
-      const data = JSON.parse(response.text || '{}');
+      const responseText = response.text;
+      if (!responseText) throw new Error("Empty response from AI cluster");
+      const data = JSON.parse(responseText || '{}');
+      
+      // Only deduct if successful
+      await CreditService.deductCredits(costType, `AI Generation: ${template} - ${prompt.substring(0, 20)}...`);
+      
       setResult(data);
       toast.success("Content synthesized successfully");
     } catch (err) {
       console.error(err);
-      toast.error("Generation cluster timeout. Try again.");
+      if (err instanceof Error && err.message.includes("Insufficient credits")) {
+        toast.error("Insufficient AI credits. Visit the Dashboard to upgrade.");
+      } else {
+        toast.error("Generation cluster timeout. Try again.");
+      }
     } finally {
       setIsGenerating(false);
     }
-  } catch (err) {
-    setIsGenerating(false);
-  }
-};
+  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -105,17 +113,43 @@ export function ContentGenerator() {
     toast.info("Workspace cleared");
   };
 
-  const handleSaveDraft = () => {
+  const handleSaveDraft = async () => {
     if (!result) return;
-    toast.success("Artifact stored in local draft cluster");
+    const user = auth.currentUser;
+    if (!user) return toast.error("Authentication required");
+
+    toast.promise(addDoc(collection(db, `users/${user.uid}/drafts`), {
+      ...result,
+      template,
+      keywords,
+      tone,
+      createdAt: serverTimestamp()
+    }), {
+      loading: 'Storing artifact in neural draft cluster...',
+      success: 'Artifact archived successfully',
+      error: 'Archive operation failed'
+    });
   };
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     if (!result) return;
-    toast.promise(new Promise(res => setTimeout(res, 1500)), {
+    
+    const user = auth.currentUser;
+    if (!user) return toast.error("Authentication required");
+
+    toast.promise(new Promise(async (res, rej) => {
+      try {
+        await CreditService.deductCredits('WEB20_PUBLISHING', `Syndication: ${result.title.substring(0, 30)}...`);
+        setTimeout(res, 2000);
+      } catch (e) {
+        rej(e);
+      }
+    }), {
       loading: 'Establishing secure link to publishing nodes...',
       success: 'Content successfully injected into syndication queue',
-      error: 'Publishing node rejection'
+      error: (err) => err instanceof Error && err.message === 'INSUFFICIENT_CREDITS' 
+        ? "Insufficient credits for syndication" 
+        : 'Publishing node rejection'
     });
   };
 

@@ -63,6 +63,11 @@ export function Auth({ onLogin }: { onLogin: () => void }) {
         createdAt: serverTimestamp(),
         deviceFingerprint: SecurityService.getDeviceFingerprint()
       });
+    } else {
+      const data = snap.data();
+      if (data.credits === undefined) {
+        await setDoc(userRef, { credits: 100 }, { merge: true });
+      }
     }
   };
 

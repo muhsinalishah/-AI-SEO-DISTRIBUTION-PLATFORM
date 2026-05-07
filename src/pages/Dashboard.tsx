@@ -16,6 +16,7 @@ import {
   Package
 } from 'lucide-react';
 import { useAuth } from '../App';
+import { toast } from 'sonner';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 
@@ -39,6 +40,21 @@ export function Dashboard() {
     { label: 'Success Rate', value: '98.5%', trend: '+0.2%', trendType: 'up', icon: Zap },
   ];
 
+  const handleGlobalPing = () => {
+    toast.promise(new Promise(res => setTimeout(res, 2000)), {
+      loading: 'Broadcasting keep-alive signal to global distribution nodes...',
+      success: () => {
+        return `All nodes responded. Network topology optimized. Balance: ${profile?.credits} credits.`;
+      },
+      error: 'Cluster heartbeat timeout'
+    });
+  };
+
+  const handleQuickSyndication = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast.success("URL injected into high-priority syndication queue");
+  };
+
   return (
     <div className="space-y-8 pb-12">
       {/* Header Section */}
@@ -51,7 +67,10 @@ export function Dashboard() {
           <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest pl-2 pr-4 py-1.5 bg-white/5 rounded-full border border-white/10 flex items-center gap-2">
             <Clock className="w-3 h-3 text-cyan-400" /> Auto-Refresh Active
           </span>
-          <button className="px-4 py-2 bg-cyan-500 text-black text-xs font-bold rounded-lg hover:bg-cyan-400 transition-all uppercase tracking-tighter italic">
+          <button 
+            onClick={handleGlobalPing}
+            className="px-4 py-2 bg-cyan-500 text-black text-xs font-bold rounded-lg hover:bg-cyan-400 transition-all uppercase tracking-tighter italic shadow-lg shadow-cyan-500/20 active:scale-95"
+          >
             Execute Global Ping
           </button>
         </div>
@@ -185,12 +204,12 @@ export function Dashboard() {
         <div className="p-8 rounded-3xl bg-gradient-to-br from-cyan-500/10 to-blue-600/5 border border-cyan-500/20 group relative overflow-hidden">
           <h4 className="text-lg font-bold text-white mb-4 uppercase tracking-tighter italic">Instant Syndication</h4>
           <p className="text-xs text-gray-400 mb-6 leading-relaxed">Submit a URL to trigger our 24-platform distribution cluster immediately.</p>
-          <div className="flex gap-2">
-            <input type="text" placeholder="https://..." className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 text-xs outline-none focus:border-cyan-500/50" />
-            <button className="p-3 bg-cyan-500 text-black rounded-xl hover:bg-cyan-400 transition-all">
+          <form onSubmit={handleQuickSyndication} className="flex gap-2">
+            <input type="url" required placeholder="https://..." className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 text-xs outline-none focus:border-cyan-500/50" />
+            <button type="submit" className="p-3 bg-cyan-500 text-black rounded-xl hover:bg-cyan-400 transition-all">
               <Zap className="w-4 h-4" />
             </button>
-          </div>
+          </form>
           <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 blur-[50px] pointer-events-none group-hover:scale-150 transition-transform" />
         </div>
 

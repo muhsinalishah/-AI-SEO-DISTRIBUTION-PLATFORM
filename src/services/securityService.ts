@@ -37,7 +37,7 @@ export const SecurityService = {
       new Date().getTimezoneOffset(),
       window.screen.colorDepth,
       navigator.hardwareConcurrency,
-      navigator.deviceMemory
+      (navigator as any).deviceMemory
     ].join('|');
     
     // Quick hash

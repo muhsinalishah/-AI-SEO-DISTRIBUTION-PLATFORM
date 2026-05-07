@@ -55,7 +55,12 @@ export default function App() {
         // Real-time profile sync for credits
         const unsubProfile = onSnapshot(doc(db, 'users', user.uid), async (snap) => {
           if (snap.exists()) {
-            setProfile(snap.data());
+            const data = snap.data();
+            // Upgrade check: ensure credits exist
+            if (data.credits === undefined) {
+              await setDoc(doc(db, 'users', user.uid), { credits: 100 }, { merge: true });
+            }
+            setProfile(data);
           } else {
             const referredBy = sessionStorage.getItem('referred_by');
             const newProfile = {
