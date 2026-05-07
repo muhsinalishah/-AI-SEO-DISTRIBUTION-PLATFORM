@@ -1,0 +1,116 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- GLOBAL HELPERS ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isProjectOwner(projectId) {
+      return isSignedIn() && get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- ENTITY VALIDATIONS ---
+
+    function isValidUser(data) {
+      return data.userId == request.auth.uid
+        && data.email is string && data.email.size() <= 128
+        && (!('credits' in data) || data.credits is int)
+        && data.keys().hasAll(['userId', 'email']);
+    }
+
+    function isValidProject(data) {
+      return data.ownerId == request.auth.uid
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.keys().hasAll(['projectId', 'ownerId', 'name']);
+    }
+
+    function isValidContent(data) {
+      return data.projectId is string
+        && data.type is string && data.type in ['article', 'parasite_seo', 'web20', 'reddit_post', 'backlink_context']
+        && data.title is string && data.title.size() <= 256
+        && data.body is string && data.body.size() <= 50000;
+    }
+
+    function isValidTask(data) {
+      return data.userId == request.auth.uid
+        && data.module is string && data.module.size() <= 64;
+    }
+
+    // --- CATCH ALL DENY ---
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- COLLECTION RULES ---
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId)
+        && isValidUser(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'lastLogin']);
+    }
+
+    match /projects/{projectId} {
+      allow get: if isOwner(existing().ownerId);
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidProject(incoming()) && isValidId(projectId);
+      allow update: if isOwner(existing().ownerId)
+        && isValidProject(incoming())
+        && incoming().ownerId == existing().ownerId
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description', 'targetUrls', 'keywords', 'status']);
+      allow delete: if isOwner(existing().ownerId);
+
+      // Sub-collections
+      match /content/{contentId} {
+        allow read: if isProjectOwner(projectId);
+        allow create: if isProjectOwner(projectId) && isValidContent(incoming()) && isValidId(contentId);
+        allow update: if isProjectOwner(projectId)
+          && isValidContent(incoming())
+          && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'body', 'metaDescription', 'status']);
+        allow delete: if isProjectOwner(projectId);
+      }
+
+      match /backlinks/{linkId} {
+        allow read: if isProjectOwner(projectId);
+        allow create: if isProjectOwner(projectId) && isValidId(linkId);
+        allow delete: if isProjectOwner(projectId);
+      }
+    }
+
+    match /indexing_requests/{requestId} {
+      allow read: if isOwner(resource.data.userId);
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid && isValidId(requestId);
+    }
+
+    match /expired_domains/{domainId} {
+      allow read: if isSignedIn();
+      allow write: if false; // System only or Admin (to be added)
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isOwner(resource.data.userId);
+      allow create: if isSignedIn() && isValidTask(incoming()) && isValidId(taskId);
+      allow update: if isOwner(existing().userId)
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'attempts']);
+    }
+  }
+}
