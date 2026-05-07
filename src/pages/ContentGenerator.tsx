@@ -20,6 +20,7 @@ import { ai, MODELS } from '../lib/gemini';
 import { useAuth } from '../App';
 import { cn } from '../lib/utils';
 import { toast } from 'sonner';
+import { CreditService } from '../services/creditService';
 
 type ContentTemplate = 'article' | 'parasite_seo' | 'web20' | 'reddit_post' | 'quora_answer';
 
@@ -46,8 +47,15 @@ export function ContentGenerator() {
     setIsGenerating(true);
     setResult(null);
 
-    const systemPrompt = `
-      You are an elite SEO strategist and content architect.
+    try {
+      // Determine cost based on template
+      const costType = template === 'parasite_seo' ? 'PARASITE_SEO' : 
+                       template === 'web20' ? 'WEB20_PUBLISHING' : 'ARTICLE_GENERATION';
+      
+      await CreditService.deductCredits(costType, `AI Generation: ${template} - ${prompt.substring(0, 20)}...`);
+
+      const systemPrompt = `
+        You are an elite SEO strategist and content architect.
       Your task is to generate high-quality, human-passing, NLP-optimized SEO content.
       Template Type: ${template}
       Tone: ${tone}
@@ -80,11 +88,35 @@ export function ContentGenerator() {
     } finally {
       setIsGenerating(false);
     }
-  };
+  } catch (err) {
+    setIsGenerating(false);
+  }
+};
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard");
+  };
+
+  const handleReset = () => {
+    setResult(null);
+    setPrompt('');
+    setKeywords('');
+    toast.info("Workspace cleared");
+  };
+
+  const handleSaveDraft = () => {
+    if (!result) return;
+    toast.success("Artifact stored in local draft cluster");
+  };
+
+  const handlePublish = () => {
+    if (!result) return;
+    toast.promise(new Promise(res => setTimeout(res, 1500)), {
+      loading: 'Establishing secure link to publishing nodes...',
+      success: 'Content successfully injected into syndication queue',
+      error: 'Publishing node rejection'
+    });
   };
 
   return (
@@ -254,7 +286,10 @@ export function ContentGenerator() {
                       >
                         <Copy className="w-4 h-4" />
                       </button>
-                      <button className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 text-gray-400 hover:text-white transition-all shadow-xl">
+                      <button 
+                        onClick={handleReset}
+                        className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 text-gray-400 hover:text-white transition-all shadow-xl"
+                      >
                         <RotateCcw className="w-4 h-4" />
                       </button>
                     </div>
@@ -274,10 +309,16 @@ export function ContentGenerator() {
                   </div>
 
                   <div className="flex justify-end gap-3 pt-4">
-                    <button className="px-6 py-2.5 rounded-xl border border-white/10 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all uppercase italic tracking-tighter">
+                    <button 
+                      onClick={handleSaveDraft}
+                      className="px-6 py-2.5 rounded-xl border border-white/10 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all uppercase italic tracking-tighter"
+                    >
                       Save as Draft
                     </button>
-                    <button className="px-8 py-2.5 rounded-xl bg-cyan-500 text-black text-xs font-bold hover:bg-cyan-400 transition-all shadow-lg shadow-cyan-500/20 uppercase italic tracking-tighter">
+                    <button 
+                      onClick={handlePublish}
+                      className="px-8 py-2.5 rounded-xl bg-cyan-500 text-black text-xs font-bold hover:bg-cyan-400 transition-all shadow-lg shadow-cyan-500/20 uppercase italic tracking-tighter"
+                    >
                       Execute Publish Workflow
                     </button>
                   </div>

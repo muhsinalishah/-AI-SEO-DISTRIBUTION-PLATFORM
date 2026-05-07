@@ -7,12 +7,13 @@ import {
   Search, 
   Globe, 
   Zap, 
-  Settings, 
   LogOut,
   BarChart3,
   Terminal,
   ShieldCheck,
-  Package
+  Package,
+  Users,
+  Database
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -37,6 +38,8 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
     { id: 'parasite', icon: ShieldCheck, label: 'Parasite SEO' },
     { id: 'automation', icon: Terminal, label: 'Automation' },
     { id: 'analytics', icon: BarChart3, label: 'Analytics' },
+    { id: 'affiliate', icon: Users, label: 'Affiliates' },
+    { id: 'connections', icon: Database, label: 'Connections' },
   ];
 
   return (
@@ -104,7 +107,7 @@ export function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
           <div className="flex items-center gap-6">
             <div className="flex flex-col items-end">
               <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">AI Credits</span>
-              <span className="text-sm font-mono text-cyan-400">{profile?.credits?.toLocaleString() || '84,200'} / 100k</span>
+              <span className="text-sm font-mono text-cyan-400">{profile?.credits?.toLocaleString() || '0'}</span>
             </div>
             <div className="w-px h-8 bg-slate-800 hidden sm:block"></div>
             <div className="flex items-center gap-3">

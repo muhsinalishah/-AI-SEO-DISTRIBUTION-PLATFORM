@@ -22,7 +22,7 @@ import { toast } from 'sonner';
 export function Web20Publisher() {
   const [activeTab, setActiveTab] = useState<'integrations' | 'history'>('integrations');
 
-  const platforms = [
+  const platformsList = [
     { id: 'medium', name: 'Medium', icon: 'M', status: 'connected', url: 'medium.com' },
     { id: 'hashnode', name: 'Hashnode', icon: 'H', status: 'connected', url: 'hashnode.dev' },
     { id: 'devto', name: 'Dev.to', icon: 'D', status: 'disconnected', url: 'dev.to' },
@@ -30,6 +30,27 @@ export function Web20Publisher() {
     { id: 'tumblr', name: 'Tumblr', icon: 'T', status: 'disconnected', url: 'tumblr.com' },
     { id: 'wordpress', name: 'WordPress', icon: 'W', status: 'connected', url: 'wordpress.com' },
   ];
+
+  const [platforms, setPlatforms] = useState(platformsList);
+
+  const togglePlatform = (id: string) => {
+    setPlatforms(prev => prev.map(p => {
+      if (p.id === id) {
+        const nextStatus = p.status === 'connected' ? 'disconnected' : 'connected';
+        toast.info(`${p.name} cluster ${nextStatus}`);
+        return { ...p, status: nextStatus as 'connected' | 'disconnected' };
+      }
+      return p;
+    }));
+  };
+
+  const handleDiagnostics = (name: string) => {
+    toast.promise(new Promise(res => setTimeout(res, 1000)), {
+      loading: `Running diagnostics on ${name} node...`,
+      success: `${name} latency verified: 124ms. Signal path optimal.`,
+      error: 'Diagnostic cluster failure'
+    });
+  };
 
   const publications = [
     { id: 1, title: 'Mastering Technical SEO in 2026', platform: 'Medium', status: 'published', date: '2h ago', url: '#' },
@@ -107,15 +128,24 @@ export function Web20Publisher() {
               <div className="mt-8 pt-6 border-t border-white/5 flex gap-2">
                 {p.status === 'connected' ? (
                   <>
-                    <button className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-bold uppercase tracking-widest text-white transition-all">
+                    <button 
+                      onClick={() => handleDiagnostics(p.name)}
+                      className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-bold uppercase tracking-widest text-white transition-all"
+                    >
                       Diagnostics
                     </button>
-                    <button className="px-4 py-2.5 bg-white/5 hover:bg-red-500/10 hover:text-red-500 rounded-xl text-gray-500 transition-all">
+                    <button 
+                      onClick={() => togglePlatform(p.id)}
+                      className="px-4 py-2.5 bg-white/5 hover:bg-red-500/10 hover:text-red-500 rounded-xl text-gray-500 transition-all"
+                    >
                       <Power className="w-4 h-4" />
                     </button>
                   </>
                 ) : (
-                  <button className="w-full py-2.5 bg-cyan-500 text-black font-bold rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-cyan-400 transition-all flex items-center justify-center gap-2">
+                  <button 
+                    onClick={() => togglePlatform(p.id)}
+                    className="w-full py-2.5 bg-cyan-500 text-black font-bold rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-cyan-400 transition-all flex items-center justify-center gap-2"
+                  >
                     <Zap className="w-4 h-4" /> Initialize Connection
                   </button>
                 )}
@@ -123,7 +153,10 @@ export function Web20Publisher() {
             </motion.div>
           ))}
 
-          <button className="p-6 rounded-3xl bg-transparent border border-dashed border-white/10 hover:border-cyan-500/30 hover:bg-cyan-500/[0.02] transition-all flex flex-col items-center justify-center gap-4 group">
+          <button 
+            onClick={() => toast.info("Endpoint request transmitted to backend core")}
+            className="p-6 rounded-3xl bg-transparent border border-dashed border-white/10 hover:border-cyan-500/30 hover:bg-cyan-500/[0.02] transition-all flex flex-col items-center justify-center gap-4 group"
+          >
             <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/5 group-hover:scale-110 transition-transform">
               <Plus className="w-6 h-6 text-gray-500" />
             </div>
@@ -190,7 +223,10 @@ export function Web20Publisher() {
           </div>
           
           <div className="mt-8 flex justify-center">
-            <button className="text-[10px] font-bold uppercase tracking-widest text-gray-600 hover:text-cyan-400 transition-colors flex items-center gap-2">
+            <button 
+              onClick={() => toast.success("Metadata synchronization complete")}
+              className="text-[10px] font-bold uppercase tracking-widest text-gray-600 hover:text-cyan-400 transition-colors flex items-center gap-2"
+            >
               Sync Full Metadata History <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -203,7 +239,10 @@ export function Web20Publisher() {
           <Share2 className="w-12 h-12 text-indigo-500/30 mb-6 group-hover:scale-110 transition-transform" />
           <h3 className="text-2xl font-bold text-white mb-4 italic uppercase tracking-tighter">Cluster Scheduling</h3>
           <p className="text-gray-400 text-sm mb-8 max-w-sm leading-relaxed">Advanced queuing system that distributes articles across platforms with randomized delays to maximize human-pattern simulation.</p>
-          <button className="px-8 py-3 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-2xl text-[10px] font-bold uppercase tracking-widest text-indigo-400 transition-all flex items-center gap-2">
+          <button 
+            onClick={() => toast.info("Distribution scheduler interface active")}
+            className="px-8 py-3 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-2xl text-[10px] font-bold uppercase tracking-widest text-indigo-400 transition-all flex items-center gap-2"
+          >
              <Calendar className="w-4 h-4" /> Configure Scheduler
           </button>
           

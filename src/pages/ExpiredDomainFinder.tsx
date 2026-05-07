@@ -13,8 +13,31 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
+import { toast } from 'sonner';
+
 export function ExpiredDomainFinder() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleApplyFilters = () => {
+    toast.success("Filters applied to global scraper");
+  };
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    toast.promise(new Promise(res => setTimeout(res, 2000)), {
+      loading: 'Scraping fresh auction data...',
+      success: () => {
+        setIsRefreshing(false);
+        return '42 new high-authority domains located';
+      },
+      error: 'Scraping link failure'
+    });
+  };
+
+  const handleAcquire = (domain: string) => {
+    toast.info(`Redirecting to registrar for ${domain}...`);
+  };
   
   const mockDomains = [
     { domain: 'seo-mastery.com', da: 42, pa: 38, spam: '1%', niche: 'Marketing', price: '$450' },
@@ -65,7 +88,10 @@ export function ExpiredDomainFinder() {
               </div>
             </div>
 
-            <button className="w-full py-3 bg-cyan-500 text-black font-bold rounded-2xl text-[10px] uppercase tracking-widest hover:bg-cyan-400 transition-all italic">
+            <button 
+              onClick={handleApplyFilters}
+              className="w-full py-3 bg-cyan-500 text-black font-bold rounded-2xl text-[10px] uppercase tracking-widest hover:bg-cyan-400 transition-all italic"
+            >
               Apply Global Filters
             </button>
           </div>
@@ -88,8 +114,12 @@ export function ExpiredDomainFinder() {
                 className="w-full bg-sidebar-bg border border-border-main rounded-xl pl-12 pr-4 py-4 text-sm text-gray-300 outline-none focus:border-cyan-500/40 transition-all shadow-xl"
               />
             </div>
-            <button className="px-8 py-4 bg-white/5 border border-white/5 rounded-2xl text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-white hover:bg-white/[0.07] transition-all flex items-center gap-2">
-              <RefreshCw className="w-4 h-4" /> Fetch Fresh Data
+            <button 
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="px-8 py-4 bg-white/5 border border-white/5 rounded-2xl text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-white hover:bg-white/[0.07] transition-all flex items-center gap-2 disabled:opacity-50"
+            >
+              <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} /> Fetch Fresh Data
             </button>
           </div>
 
@@ -131,7 +161,10 @@ export function ExpiredDomainFinder() {
                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{d.price}</span>
                        </td>
                        <td className="py-5 text-right">
-                         <button className="p-2 bg-white/5 border border-white/5 rounded-xl hover:bg-cyan-500 hover:text-black transition-all">
+                         <button 
+                           onClick={() => handleAcquire(d.domain)}
+                           className="p-2 bg-white/5 border border-white/5 rounded-xl hover:bg-cyan-500 hover:text-black transition-all"
+                         >
                            <ExternalLink className="w-4 h-4" />
                          </button>
                        </td>

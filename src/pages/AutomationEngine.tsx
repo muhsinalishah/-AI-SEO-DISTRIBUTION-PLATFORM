@@ -20,15 +20,49 @@ import {
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
 
+import { toast } from 'sonner';
+
 export function AutomationEngine() {
   const [activeTask, setActiveTask] = useState<number | null>(null);
 
-  const tasks = [
+  const initialTasks = [
     { id: 1, name: 'Web 2.0 Mass Syndication', status: 'running', progress: 65, module: 'Cluster-A' },
     { id: 2, name: 'Tier 2 Link Juicing', status: 'paused', progress: 42, module: 'Link-Engine' },
     { id: 3, name: 'Domain Authority Scan', status: 'running', progress: 89, module: 'Scraper-B' },
     { id: 4, name: 'Google Indexing Queue', status: 'queued', progress: 0, module: 'Index-Main' },
   ];
+
+  const [tasks, setTasks] = useState(initialTasks);
+
+  const toggleTask = (id: number) => {
+    setTasks(prev => prev.map(t => {
+      if (t.id === id) {
+        const nextStatus = t.status === 'running' ? 'paused' : 'running';
+        toast.info(`Workflow ${t.id} ${nextStatus}`);
+        return { ...t, status: nextStatus as 'running' | 'paused' | 'queued' };
+      }
+      return t;
+    }));
+  };
+
+  const handleKillswitch = () => {
+    toast.promise(new Promise(res => setTimeout(res, 1000)), {
+      loading: 'Sending emergency signal to global nodes...',
+      success: () => {
+        setTasks(prev => prev.map(t => ({ ...t, status: 'paused' as const })));
+        return 'ALL CLUSTERS DEACTIVATED. SHUTDOWN SUCCESSFUL.';
+      },
+      error: 'Killswitch signal rejection'
+    });
+  };
+
+  const handleToggleOption = (label: string) => {
+    toast.success(`${label} status toggled`);
+  };
+
+  const handleNewWorkflow = () => {
+    toast.info("Custom workflow injector ready. Upload JSON schema.");
+  };
 
   return (
     <div className="space-y-8 pb-20">
@@ -67,15 +101,24 @@ export function AutomationEngine() {
                   </div>
                   <div className="flex gap-2">
                     {task.status === 'running' ? (
-                      <button className="p-2 bg-white/5 rounded-xl hover:text-amber-500 transition-colors">
+                      <button 
+                        onClick={() => toggleTask(task.id)}
+                        className="p-2 bg-white/5 rounded-xl hover:text-amber-500 transition-colors"
+                      >
                         <Pause className="w-4 h-4" />
                       </button>
                     ) : (
-                      <button className="p-2 bg-white/5 rounded-xl hover:text-cyan-400 transition-colors">
+                      <button 
+                        onClick={() => toggleTask(task.id)}
+                        className="p-2 bg-white/5 rounded-xl hover:text-cyan-400 transition-colors"
+                      >
                         <Play className="w-4 h-4" />
                       </button>
                     )}
-                    <button className="p-2 bg-white/5 rounded-xl hover:text-white transition-colors">
+                    <button 
+                      onClick={() => toast.info("Advanced configuration cluster pending initialization")}
+                      className="p-2 bg-white/5 rounded-xl hover:text-white transition-colors"
+                    >
                       <Settings2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -110,7 +153,10 @@ export function AutomationEngine() {
               </motion.div>
             ))}
 
-            <button className="p-6 rounded-3xl bg-transparent border border-dashed border-white/10 hover:border-cyan-500/30 hover:bg-cyan-500/[0.02] transition-all flex flex-col items-center justify-center gap-4 group">
+            <button 
+              onClick={handleNewWorkflow}
+              className="p-6 rounded-3xl bg-transparent border border-dashed border-white/10 hover:border-cyan-500/30 hover:bg-cyan-500/[0.02] transition-all flex flex-col items-center justify-center gap-4 group"
+            >
               <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/5 group-hover:scale-110 transition-transform">
                 <Zap className="w-6 h-6 text-gray-600" />
               </div>
@@ -157,7 +203,10 @@ export function AutomationEngine() {
              </h3>
              <div className="space-y-6">
                 <div>
-                   <label className="flex items-center justify-between cursor-pointer group">
+                   <label 
+                     onClick={() => handleToggleOption('Parallel Processing')}
+                     className="flex items-center justify-between cursor-pointer group"
+                   >
                      <div className="flex items-center gap-4">
                        <CloudLightning className="w-5 h-5 text-gray-500 group-hover:text-cyan-400 transition-colors" />
                        <span className="text-[10px] font-bold text-white uppercase italic tracking-widest">Parallel Processing</span>
@@ -168,7 +217,10 @@ export function AutomationEngine() {
                    </label>
                 </div>
                 <div>
-                   <label className="flex items-center justify-between cursor-pointer group">
+                   <label 
+                     onClick={() => handleToggleOption('Intelligent Delays')}
+                     className="flex items-center justify-between cursor-pointer group"
+                   >
                      <div className="flex items-center gap-4">
                        <Clock className="w-5 h-5 text-gray-500 group-hover:text-cyan-400 transition-colors" />
                        <span className="text-[10px] font-bold text-white uppercase italic tracking-widest">Intelligent Delays</span>
@@ -179,7 +231,10 @@ export function AutomationEngine() {
                    </label>
                 </div>
                 <div>
-                   <label className="flex items-center justify-between cursor-pointer group">
+                   <label 
+                     onClick={() => handleToggleOption('Adversarial Evasion')}
+                     className="flex items-center justify-between cursor-pointer group"
+                   >
                      <div className="flex items-center gap-4">
                        <ShieldCheck className="w-5 h-5 text-gray-500 group-hover:text-cyan-400 transition-colors" />
                        <span className="text-[10px] font-bold text-white uppercase italic tracking-widest">Adversarial Evasion</span>
@@ -213,7 +268,10 @@ export function AutomationEngine() {
               <AlertTriangle className="w-12 h-12 text-red-500/20 mb-6 group-hover:scale-110 transition-transform" />
               <h4 className="text-2xl font-bold text-white uppercase italic tracking-tighter mb-4">Emergency Killswitch</h4>
               <p className="text-xs text-gray-400 leading-relaxed mb-8">Instantly suspend all active network transmissions and clear worker cache across all clusters.</p>
-              <button className="w-full py-4 bg-red-500 text-black font-bold rounded-2xl text-[10px] uppercase tracking-widest hover:bg-red-400 transition-all italic">
+              <button 
+                onClick={handleKillswitch}
+                className="w-full py-4 bg-red-500 text-black font-bold rounded-2xl text-[10px] uppercase tracking-widest hover:bg-red-400 transition-all italic"
+              >
                 Deactivate Global Cluster
               </button>
               <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-red-500/5 blur-[80px] pointer-events-none" />

@@ -2,20 +2,95 @@
   "entities": {
     "User": {
       "title": "User Profile",
-      "description": "Stores user account information and subscription status.",
+      "description": "Stores user account information, high-fidelity security state, and credit balance.",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
         "email": { "type": "string", "format": "email" },
+        "phoneNumber": { "type": "string" },
+        "emailVerified": { "type": "boolean" },
+        "phoneVerified": { "type": "boolean" },
         "displayName": { "type": "string" },
         "photoURL": { "type": "string" },
         "subscriptionTier": { "type": "string", "enum": ["free", "pro", "agency", "enterprise"] },
         "credits": { "type": "integer" },
+        "referralCode": { "type": "string" },
+        "referredBy": { "type": "string" },
+        "trustScore": { "type": "number" },
+        "isBanned": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" },
         "lastLogin": { "type": "string", "format": "date-time" },
-        "apiKeys": { "type": "array", "items": { "type": "string" } }
+        "deviceFingerprint": { "type": "string" }
       },
       "required": ["userId", "email"]
+    },
+    "CreditTransaction": {
+      "title": "Credit Transaction",
+      "description": "Audit log for every credit fluctuation in the system.",
+      "type": "object",
+      "properties": {
+        "transactionId": { "type": "string" },
+        "userId": { "type": "string" },
+        "amount": { "type": "integer" },
+        "type": { "type": "string", "enum": ["usage", "recharge", "bonus", "referral_reward", "refund"] },
+        "feature": { "type": "string" },
+        "description": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "PlatformCredential": {
+      "title": "Platform Credential",
+      "description": "Secure storage for Web 2.0 platform authentication handles.",
+      "type": "object",
+      "properties": {
+        "credentialId": { "type": "string" },
+        "userId": { "type": "string" },
+        "platform": { "type": "string" },
+        "identifier": { "type": "string", "description": "Email or Username" },
+        "passwordEncrypted": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "expired", "invalid"] },
+        "lastUsed": { "type": "string", "format": "date-time" }
+      }
+    },
+    "AffiliateStats": {
+      "title": "Affiliate Stats",
+      "description": "Real-time performance metrics for affiliate partners.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "totalClicks": { "type": "integer" },
+        "totalSignups": { "type": "integer" },
+        "totalPaidUsers": { "type": "integer" },
+        "pendingCommissions": { "type": "number" },
+        "totalEarned": { "type": "number" },
+        "payoutHistory": { "type": "array" }
+      }
+    },
+    "Commission": {
+      "title": "Affiliate Commission",
+      "description": "Specific share of revenue attributed to a referrer.",
+      "type": "object",
+      "properties": {
+        "commissionId": { "type": "string" },
+        "referrerId": { "type": "string" },
+        "referredUserId": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "approved", "paid", "rejected"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "FraudLog": {
+      "title": "Security & Fraud Log",
+      "description": "Records suspicious activity and security events.",
+      "type": "object",
+      "properties": {
+        "logId": { "type": "string" },
+        "userId": { "type": "string" },
+        "type": { "type": "string", "enum": ["ip_collision", "disposable_email", "brute_force", "vpn_detected", "multiple_accounts"] },
+        "severity": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "metadata": { "type": "object" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
     },
     "Project": {
       "title": "SEO Project",
@@ -114,6 +189,11 @@
   },
   "firestore": {
     "/users/{userId}": { "schema": "User", "description": "Global user profiles" },
+    "/users/{userId}/credit_transactions/{transactionId}": { "schema": "CreditTransaction", "description": "Credit usage audit log" },
+    "/users/{userId}/platform_credentials/{credentialId}": { "schema": "PlatformCredential", "description": "Linked Web 2.0 accounts" },
+    "/users/{userId}/affiliate_stats/main": { "schema": "AffiliateStats", "description": "Aggregation of referral performance" },
+    "/commissions/{commissionId}": { "schema": "Commission", "description": "Global commission tracking" },
+    "/fraud_logs/{logId}": { "schema": "FraudLog", "description": "Security events and anti-abuse logs" },
     "/projects/{projectId}": { "schema": "Project", "description": "All SEO projects" },
     "/projects/{projectId}/content/{contentId}": { "schema": "Content", "description": "Content belonging to a project" },
     "/projects/{projectId}/backlinks/{linkId}": { "schema": "Backlink", "description": "Backlinks associated with a project" },

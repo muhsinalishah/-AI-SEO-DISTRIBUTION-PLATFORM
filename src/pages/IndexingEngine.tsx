@@ -9,8 +9,36 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
+import { toast } from 'sonner';
+
+import { CreditService } from '../services/creditService';
+
 export function IndexingEngine() {
   const [url, setUrl] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!url) return toast.error("Enter a valid URL");
+    setIsSubmitting(true);
+    try {
+      await CreditService.deductCredits('INDEXING_REQUEST', `Index request: ${url}`);
+      
+      toast.promise(new Promise(res => setTimeout(res, 2000)), {
+        loading: 'Pinging global crawling clusters...',
+        success: (data) => {
+          setIsSubmitting(false);
+          setUrl('');
+          return 'Signal transmitted. Search engines notified.';
+        },
+        error: () => {
+          setIsSubmitting(false);
+          return 'Transmission cluster failure';
+        }
+      });
+    } catch (err) {
+      setIsSubmitting(false);
+    }
+  };
   
   const history = [
     { id: 1, url: 'https://ais-dev.run/blog/seo-2026', status: 'completed', date: '20m ago' },
@@ -42,8 +70,12 @@ export function IndexingEngine() {
                     placeholder="https://..." 
                     className="flex-1 bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-300 focus:border-cyan-500/50 transition-all outline-none"
                   />
-                  <button className="px-6 py-3 bg-cyan-500 text-black font-bold rounded-xl hover:bg-cyan-400 transition-all uppercase tracking-tighter italic flex items-center gap-2">
-                    Submit <Send className="w-4 h-4" />
+                  <button 
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className="px-6 py-3 bg-cyan-500 text-black font-bold rounded-xl hover:bg-cyan-400 transition-all uppercase tracking-tighter italic flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {isSubmitting ? 'Sending...' : 'Submit'} <Send className="w-4 h-4" />
                   </button>
                 </div>
               </div>

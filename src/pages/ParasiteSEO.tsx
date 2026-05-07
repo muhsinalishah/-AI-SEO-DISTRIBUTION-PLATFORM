@@ -17,6 +17,8 @@ import {
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
 
+import { toast } from 'sonner';
+
 export function ParasiteSEO() {
   const platforms = [
     { name: 'Medium', authority: 95, difficulty: 'Moderate', speed: 'Fast' },
@@ -26,6 +28,22 @@ export function ParasiteSEO() {
     { name: 'Quora', authority: 92, difficulty: 'Medium', speed: 'Medium' },
     { name: 'Hashnode', authority: 88, difficulty: 'Low', speed: 'Fast' },
   ];
+
+  const [selectedPlatform, setSelectedPlatform] = useState('Medium');
+  const [campaignName, setCampaignName] = useState('');
+
+  const handleHijack = () => {
+    if (!campaignName) return toast.error("Enter campaign name");
+    toast.promise(new Promise(res => setTimeout(res, 2500)), {
+      loading: `Injecting content into ${selectedPlatform} host cluster...`,
+      success: 'Target hijacked. Content successfully indexed through host authority.',
+      error: 'Host rejection. Anti-bot measured detects high velocity.'
+    });
+  };
+
+  const handleConfigureMatrix = () => {
+    toast.success("Niche semantic matrix updated");
+  };
 
   return (
     <div className="space-y-8 pb-20">
@@ -45,7 +63,13 @@ export function ParasiteSEO() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500 mb-2 block">Campaign Name</label>
-                  <input type="text" placeholder="e.g. Best E-com SEO Cluster" className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-300 outline-none focus:border-cyan-500/50" />
+                  <input 
+                    type="text" 
+                    value={campaignName}
+                    onChange={(e) => setCampaignName(e.target.value)}
+                    placeholder="e.g. Best E-com SEO Cluster" 
+                    className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-300 outline-none focus:border-cyan-500/50" 
+                  />
                 </div>
                 <div>
                   <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500 mb-2 block">Link Insertion Slot</label>
@@ -61,10 +85,17 @@ export function ParasiteSEO() {
                 <label className="text-[10px] uppercase tracking-widest font-bold text-gray-500 mb-4 block">Select Hosting Cluster</label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {platforms.map(p => (
-                    <button key={p.name} className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-cyan-500/30 hover:bg-cyan-500/[0.02] transition-all text-left group">
+                    <button 
+                      key={p.name} 
+                      onClick={() => setSelectedPlatform(p.name)}
+                      className={cn(
+                        "p-4 rounded-2xl border transition-all text-left group relative",
+                        selectedPlatform === p.name ? "bg-cyan-500/10 border-cyan-500/30" : "bg-white/[0.02] border-white/5 hover:border-cyan-500/30 hover:bg-cyan-500/[0.02]"
+                      )}
+                    >
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-xs font-bold text-white uppercase italic tracking-tighter">{p.name}</span>
-                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                        <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", selectedPlatform === p.name ? "bg-cyan-400" : "bg-green-500")} />
                       </div>
                       <div className="flex justify-between items-end mt-4">
                         <span className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">DR {p.authority}</span>
@@ -76,7 +107,10 @@ export function ParasiteSEO() {
               </div>
 
               <div className="pt-6 flex flex-col md:flex-row gap-4 items-center">
-                <button className="w-full md:w-auto px-10 py-4 bg-cyan-500 text-black font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-cyan-400 transition-all shadow-xl shadow-cyan-500/10 uppercase italic tracking-tighter">
+                <button 
+                  onClick={handleHijack}
+                  className="w-full md:w-auto px-10 py-4 bg-cyan-500 text-black font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-cyan-400 transition-all shadow-xl shadow-cyan-500/10 uppercase italic tracking-tighter"
+                >
                   Execute Global Hijack <Zap className="w-5 h-5 fill-black" />
                 </button>
                 <div className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-xl border border-white/10">
