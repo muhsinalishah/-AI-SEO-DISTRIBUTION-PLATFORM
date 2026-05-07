@@ -31,8 +31,6 @@ service cloud.firestore {
 
     function isValidUser(data) {
       return data.userId == request.auth.uid
-        && data.email is string && data.email.size() <= 128
-        && (!('credits' in data) || data.credits is int)
         && data.keys().hasAll(['userId', 'email']);
     }
 
@@ -62,11 +60,9 @@ service cloud.firestore {
     // --- COLLECTION RULES ---
 
     match /users/{userId} {
-      allow read: if isOwner(userId);
-      allow create: if isOwner(userId) && isValidUser(incoming());
-      allow update: if isOwner(userId)
-        && isValidUser(incoming())
-        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'lastLogin', 'referredBy', 'credits']);
+      allow read: if isOwner(userId) || (isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)));
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
 
       match /platform_credentials/{credId} {
         allow read, write: if isOwner(userId);
@@ -80,9 +76,13 @@ service cloud.firestore {
         allow read, create: if isOwner(userId);
       }
 
+      match /drafts/{draftId} {
+        allow read, write: if isOwner(userId);
+      }
+
       match /affiliate_stats/{statId} {
         allow read: if isOwner(userId);
-        allow create, update: if isSignedIn(); // Allow recording stats
+        allow create, update: if isSignedIn();
       }
     }
 
@@ -120,6 +120,10 @@ service cloud.firestore {
         allow read: if isProjectOwner(projectId);
         allow create: if isProjectOwner(projectId) && isValidId(linkId);
         allow delete: if isProjectOwner(projectId);
+      }
+      
+      match /drafts/{draftId} {
+        allow read, write: if isProjectOwner(projectId);
       }
     }
 
